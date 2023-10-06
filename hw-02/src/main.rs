@@ -8,7 +8,8 @@
 // no-spaces: remove all spaces from the text.
 // slugify: convert the text into a slug (a version of the text suitable for URLs) using the slug crate.
 // short-slugify: convert the text into a short slug (similar to slugify but with a max length, cropped to the last dash before the length threshold).
-// alternating: Convert the text to an alternating between uppercase and lowercase pattern using the convert_case crate.
+// alternating: convert the text to an alternating between uppercase and lowercase pattern using the convert_case crate.
+// leetify: Convert the text to leet speak using a .map() and a match block over specific letters.
 
 extern crate slug;
 use slug::slugify;
@@ -26,6 +27,7 @@ enum Command {
     Slugify,
     ShortSlugify,
     Alternating,
+    Leetify,
     NoCommand,
 }
 
@@ -40,6 +42,7 @@ impl FromStr for Command {
             "slugify" => Ok(Command::Slugify),
             "short-slugify" => Ok(Command::ShortSlugify),
             "alternating" => Ok(Command::Alternating),
+            "leetify" => Ok(Command::Leetify),
             _ => Err(()),
         }
     }
@@ -74,8 +77,12 @@ fn transmute(string: String, command: Command) -> String {
         Command::Slugify => slugify(&string),
         Command::ShortSlugify => short_slugify(string),
         Command::Alternating => string.to_case(Case::Alternating),
+        Command::Leetify => leetify(string.to_uppercase()),
         Command::NoCommand => {
-            println!("You aren't using this program properly, but here's an output anyway. I put a little something there so you don't feel bad.");
+            #[cfg(not(test))]
+            {
+                println!("You aren't using this program properly, but here's an output anyway. I put a little something there so you don't feel bad.");
+            }
             let mut string = string;
             string.push('🧁');
             string
@@ -95,6 +102,20 @@ fn short_slugify(string: String) -> String {
     }
     
     trimmed_short_slug
+}
+
+fn leetify(s: String) -> String {
+    s.chars().map(|c| match c {
+        'A' => '4',
+        'B' => '8',
+        'E' => '3',
+        'G' => '9',
+        'I' => '1',
+        'O' => '0',
+        'S' => '5',
+        'T' => '7',
+        _ => c,
+    }).collect()
 }
 
 #[cfg(test)]
@@ -122,6 +143,10 @@ mod tests {
             "Some types, including the blue crab, the Dungeness crab, and the king crab, are often eaten by humans. Crabs may be sold fresh to restaurants or their meat may be canned.".to_string(), 
             Command::Alternating),
             "sOmE tYpEs, InClUdInG tHe BlUe CrAb, ThE dUnGeNeSs CrAb, AnD tHe KiNg CrAb, ArE oFtEn EaTeN bY hUmAnS. cRaBs MaY bE sOlD fReSh To ReStAuRaNtS oR tHeIr MeAt MaY bE cAnNeD.");
+        assert_eq!(transmute(
+            "As the crab grows larger, it seeks a larger shell.".to_string(), 
+            Command::Leetify),
+            "45 7H3 CR48 9R0W5 L4R93R, 17 533K5 4 L4R93R 5H3LL.");
         assert_eq!(transmute(
             "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.".to_string(), Command::NoCommand),
             "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.🧁");
