@@ -58,6 +58,7 @@ fn main() {
         Ok(command) => command,
         Err(e) => {
             eprintln!("Error parsing command: {}", e);
+            println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
             Command::NoCommand
         }
     };
@@ -78,8 +79,8 @@ fn main() {
 
 fn parse_command(args: &[String]) -> Result<Command, &'static str> {
     match args.get(1) {
-        Some(cmd) => Command::from_str(cmd.as_str()).map_err(|_| "Invalid command"),
-        None => Ok(Command::NoCommand),
+        Some(cmd) => Command::from_str(cmd.as_str()).map_err(|_| "Invalid command."),
+        None => Err("No command provided."),
     }
 }
 
@@ -94,14 +95,13 @@ fn read_input() -> Result<String, Box<dyn Error>> {
                     return Ok(trimmed);
                 }
                 println!("No input provided. Please try again.");
-                eprintln!("Error reading input during attempt {}: {}", counter, "No input provided.".to_string());
+                eprintln!("Error reading input during attempt {}: {}", counter+1, "No input provided.".to_string());
             }
             Err(e) => eprintln!("Error reading input: {}", e),
         }
         counter += 1;
     }
     return Err("Too many failed attempts to read input.".into());
-    //panic!("Too many failed attempts to read input.");
 }
 
 fn transmute(string: String, command: Command) -> Result<String, Box<dyn Error>> {
@@ -113,7 +113,8 @@ fn transmute(string: String, command: Command) -> Result<String, Box<dyn Error>>
         Command::ShortSlugify => short_slugify(string),
         Command::Alternating => alternating(string),
         Command::Leetify => leetify(string),
-        Command::NoCommand => Err("No valid command provided".into()),
+        // Command::NoCommand => Err("No valid command provided".into()), // An alternative way of handling the case where no command is provided.
+        Command::NoCommand => no_command(string),
     }
 } 
 
@@ -165,13 +166,13 @@ fn leetify(s: String) -> Result<String, Box<dyn Error>> {
     }).collect())
 }
 
-fn no_command(mut s: String) -> String {
+fn no_command(mut s: String) -> Result<String, Box<dyn Error>> {
         #[cfg(not(test))]
         {
             println!("You aren't using this program properly, but here's an output anyway. I put a little something there so you don't feel bad.");
         }
         s.push('🧁');
-        s
+        Ok(s)
 }
 
 #[cfg(test)]
@@ -203,9 +204,9 @@ mod tests {
             "As the crab grows larger, it seeks a larger shell.".to_string(), 
             Command::Leetify).unwrap(),
             "45 7H3 CR48 9R0W5 L4R93R, 17 533K5 4 L4R93R 5H3LL.");
-        // assert_eq!(transmute(
-        //     "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.".to_string(), Command::NoCommand).unwrap(),
-        //     "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.🧁");
+        assert_eq!(transmute(
+             "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.".to_string(), Command::NoCommand).unwrap(),
+             "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.🧁");
     }
 
     #[test]
@@ -230,7 +231,7 @@ mod tests {
     #[test]
     fn wrong_command_test() {
         let args = vec!["prog_name".to_string(), "ultracase".to_string()];
-        assert_eq!(parse_command(&args), Err("Invalid command"));
-        // assert_eq!(transmute("a crab has five pairs of legs".to_string(), Command::NoCommand).unwrap(), "a crab has five pairs of legs🧁");
+        assert_eq!(parse_command(&args), Err("Invalid command."));
+        assert_eq!(transmute("a crab has five pairs of legs".to_string(), Command::NoCommand).unwrap(), "a crab has five pairs of legs🧁");
     }
 }
