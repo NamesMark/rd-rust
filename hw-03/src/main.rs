@@ -58,7 +58,7 @@ fn main() {
         Ok(command) => command,
         Err(e) => {
             eprintln!("Error parsing command: {}", e);
-            return;
+            Command::NoCommand
         }
     };
 
@@ -106,18 +106,34 @@ fn read_input() -> Result<String, Box<dyn Error>> {
 
 fn transmute(string: String, command: Command) -> Result<String, Box<dyn Error>> {
     match command {
-        Command::Lowercase => Ok(string.to_lowercase()),
-        Command::Uppercase => Ok(string.to_uppercase()),
-        Command::NoSpaces => Ok(string.replace(" ", "")),
-        Command::Slugify => Ok(slugify(&string)),
-        Command::ShortSlugify => Ok(short_slugify(string)),
-        Command::Alternating => Ok(string.to_case(Case::Alternating)),
-        Command::Leetify => Ok(leetify(string.to_uppercase())),
+        Command::Lowercase => lowercase(string),
+        Command::Uppercase => uppercase(string),
+        Command::NoSpaces => no_spaces(string),
+        Command::Slugify => slug(&string),
+        Command::ShortSlugify => short_slugify(string),
+        Command::Alternating => alternating(string),
+        Command::Leetify => leetify(string),
         Command::NoCommand => Err("No valid command provided".into()),
     }
 } 
 
-fn short_slugify(string: String) -> String {
+fn lowercase(s: String) -> Result<String, Box<dyn Error>> {
+    Ok(s.to_lowercase())
+}
+
+fn uppercase(s: String) -> Result<String, Box<dyn Error>> {
+    Ok(s.to_uppercase())
+}
+
+fn no_spaces(s: String) -> Result<String, Box<dyn Error>> {
+    Ok(s.replace(" ", ""))
+}
+
+fn slug(s: &str) -> Result<String, Box<dyn Error>> {
+    Ok(slug::slugify(s))
+}
+
+fn short_slugify(string: String) -> Result<String, Box<dyn Error>> {
     let short_slug = slugify(&string).chars().take(MAX_SHORT_SLUG).collect::<String>();
     let mut trimmed_short_slug = short_slug.clone();
     while !trimmed_short_slug.ends_with('-') && !trimmed_short_slug.is_empty() {
@@ -125,14 +141,18 @@ fn short_slugify(string: String) -> String {
     }
     let trimmed_short_slug = trimmed_short_slug.trim_end_matches('-').to_string();
     if trimmed_short_slug.len() < MIN_SHORT_SLUG {
-        return short_slug;
+        return Ok(short_slug);
     }
     
-    trimmed_short_slug
+    Ok(trimmed_short_slug)
 }
 
-fn leetify(s: String) -> String {
-    s.chars().map(|c| match c {
+fn alternating(s: String) -> Result<String, Box<dyn Error>> {
+    Ok(s.to_case(Case::Alternating))
+}
+
+fn leetify(s: String) -> Result<String, Box<dyn Error>> {
+    Ok(s.to_uppercase().chars().map(|c| match c {
         'A' => '4',
         'B' => '8',
         'E' => '3',
@@ -142,7 +162,7 @@ fn leetify(s: String) -> String {
         'S' => '5',
         'T' => '7',
         _ => c,
-    }).collect()
+    }).collect())
 }
 
 fn no_command(mut s: String) -> String {
@@ -202,9 +222,9 @@ mod tests {
 
     #[test]
     fn short_slugify_test() {
-        assert_eq!(short_slugify("Crabs can be found in all oceans and in fresh water.".to_string()), "crabs-can-be");
-        assert_eq!(short_slugify("Crabsandothercrustaceanshaveahard covering known as the exoskeleton.".to_string()), "crabsandothercru");
-        assert_eq!(short_slugify("Although a few baby crabs leave the egg looking like small adults, most do not.".to_string()), "although-a-few");
+        assert_eq!(short_slugify("Crabs can be found in all oceans and in fresh water.".to_string()).unwrap(), "crabs-can-be");
+        assert_eq!(short_slugify("Crabsandothercrustaceanshaveahard covering known as the exoskeleton.".to_string()).unwrap(), "crabsandothercru");
+        assert_eq!(short_slugify("Although a few baby crabs leave the egg looking like small adults, most do not.".to_string()).unwrap(), "although-a-few");
     }
 
     #[test]
