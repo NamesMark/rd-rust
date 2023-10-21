@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 convert_case = "0.6.0"
+pad = "0.1.6"
 slug = "0.1.4"

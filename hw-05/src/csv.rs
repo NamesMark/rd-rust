@@ -1,5 +1,9 @@
 use std::{str::FromStr, fmt::Display};
 
+use pad::{PadStr, Alignment};
+
+const MAX_COLUMN_CAPACITY: usize = 16;
+
 pub enum Delimiter {
     Comma,
     Semicolon
@@ -27,14 +31,14 @@ impl Display for Delimiter {
 }
 
 pub struct Csv {
-    headers: Vec<String>,
+    columns: Vec<String>,
     data: Vec<Vec<String>>,
 }
 
 impl Csv {
     pub fn new() -> Self {
         Self {
-            headers: vec!(String::new()),
+            columns: vec!(String::new()),
             data: vec!(vec!(String::new())),
         }
     }
@@ -49,14 +53,14 @@ impl Csv {
             .split(&delimiter.to_string())
             .map(|header| { 
                 let mut header = header.to_string();
-                header.truncate(16);
+                header.truncate(MAX_COLUMN_CAPACITY);
                 header
             })
             .collect();
         if headers.is_empty() {
             return Err("No header data found.".to_string()); 
         }
-        self.headers = headers;
+        self.columns = headers;
             
         let data: Vec<Vec<String>> = lines[1..]
             .iter()
@@ -64,7 +68,7 @@ impl Csv {
                 line.split(&delimiter.to_string())
                     .map(|value| { 
                         let mut value = value.to_string();
-                        value.truncate(16);
+                        value.truncate(MAX_COLUMN_CAPACITY);
                         value
                     })
                     .collect()
@@ -84,13 +88,31 @@ impl Csv {
     // }
 
     pub fn display_csv_data(&self) {
-        for (index, header) in self.headers.iter().enumerate() {
-            println!("{}: {}", index, header);
+        let column_num = (self.columns).len();
+
+        let top_line = format!("╭{}╮", "-".repeat(column_num * MAX_COLUMN_CAPACITY + 3));
+        let middle_line = format!("|{}|", "-".repeat(column_num * MAX_COLUMN_CAPACITY + 3));
+        let bottom_line = format!("╰{}╯", "-".repeat(column_num * MAX_COLUMN_CAPACITY + 3));
+        println!("{}", top_line);
+
+        for column_name in self.columns.iter() {
+            print!("{}", "|");
+            // print!("{:MAX_COLUMN_CAPACITY$}", column_name); // one way to pad
+            print!("{}", column_name.pad_to_width_with_alignment(MAX_COLUMN_CAPACITY, Alignment::Middle));
         }
+        println!("{}", "|");
+        println!("{}", middle_line);
+
         for row in self.data.iter() {
-            for (index, value) in row.iter().enumerate() {
-                println!("{}: {}", index, value);
+            for (value) in row.iter() {
+                print!("{}", "|");
+                // print!("{:MAX_COLUMN_CAPACITY$}", value);
+                print!("{}", value.pad_to_width_with_alignment(MAX_COLUMN_CAPACITY, Alignment::Middle));
             }
+            println!("{}", "|");
+            println!("{}", middle_line);
         }
+
+        // println!("{}", bottom_line);
     }
 }
