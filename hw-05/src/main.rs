@@ -10,7 +10,8 @@
 // short-slugify: convert the text into a short slug (similar to slugify but with a max length, cropped to the last dash before the length threshold).
 // alternating: convert the text to an alternating between uppercase and lowercase pattern using the convert_case crate.
 // leetify: Convert the text to leet speak using a .map() and a match block over specific letters.
-// csv: parse the test as a CSV and print the data as a table.
+// csv: parse the test as a CSV and print the data as a table. Usage: csv <delimiter> (defaults to semicolon). 
+//      Put the delimiter in quotes to avoid shell expansion or other interpretation isues.
 
 extern crate slug;
 
@@ -18,6 +19,7 @@ mod csv;
 
 use std::str::FromStr;
 use std::error::Error;
+use std::io::{self, Write};
 
 use csv::Delimiter;
 
@@ -92,23 +94,55 @@ fn parse_command(args: &[String]) -> Result<Command, &'static str> {
 }
 
 fn read_input() -> Result<String, Box<dyn Error>> {
+    // let mut input = String::new();
+    // let mut counter: usize = 1;
+    // while counter <= 5 {
+    //     match std::io::stdin().read_line(&mut input) {
+    //         Ok(_) => {
+    //             let trimmed = input.trim().to_string();
+    //             if !trimmed.is_empty() {
+    //                 return Ok(trimmed);
+    //             }
+    //             println!("No input provided. Please try again.");
+    //             eprintln!("Error reading input during attempt {}: {}", counter, "No input provided.".to_string());
+    //         }
+    //         Err(e) => eprintln!("Error reading input: {}", e),
+    //     }
+    //     counter += 1;
+    // }
+    // return Err("Too many failed attempts to read input.".into());
     let mut input = String::new();
-    let mut counter: usize = 1;
-    while counter <= 5 {
-        match std::io::stdin().read_line(&mut input) {
+
+    println!("Please enter your input:");
+    
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
+
+        let mut line = String::new();
+        match io::stdin().read_line(&mut line) {
             Ok(_) => {
-                let trimmed = input.trim().to_string();
-                if !trimmed.is_empty() {
-                    return Ok(trimmed);
+                let trimmed = line.trim();
+                if trimmed.is_empty() {
+                    break;
+                } else {
+                    input.push_str(trimmed);
+                    input.push('\n');
                 }
-                println!("No input provided. Please try again.");
-                eprintln!("Error reading input during attempt {}: {}", counter, "No input provided.".to_string());
             }
-            Err(e) => eprintln!("Error reading input: {}", e),
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                break;
+            }
         }
-        counter += 1;
     }
-    return Err("Too many failed attempts to read input.".into());
+
+    if input.is_empty() {
+        Err("No input provided.".into())
+    } else {
+        input.pop();
+        Ok(input)
+    }
 }
 
 fn transmute(string: String, command: Command, args: &[String]) -> Result<String, Box<dyn Error>> {
@@ -121,8 +155,8 @@ fn transmute(string: String, command: Command, args: &[String]) -> Result<String
         Command::Alternating => alternating(string),
         Command::Leetify => leetify(string),
         Command::Csv => {
-            let delimiter_str = args.get(2).unwrap_or(&"".to_string());
-            match identify_delimiter(delimiter_str) {
+            let delimiter_str = args.get(2);
+            match identify_delimiter(delimiter_str.map(|x| x.as_str())) {
                 Ok(delimiter) => process_csv(string, delimiter),
                 Err(_) => process_csv(string, Delimiter::Semicolon)
             }
@@ -183,13 +217,14 @@ fn leetify(s: String) -> Result<String, Box<dyn Error>> {
 fn process_csv(s: String, delimiter: Delimiter) -> Result<String, Box<dyn Error>> {
     let mut csv = csv::Csv::new();
     csv.parse_csv_data(&s, delimiter)?;
+    csv.display_csv_data();
     Ok("Processed successfully.".to_string())
 }
 
-fn identify_delimiter(s: &str) -> Result<Delimiter, Box<dyn Error>> {
+fn identify_delimiter(s: Option<&str>) -> Result<Delimiter, Box<dyn Error>> {
     match s {
-        "," => Ok(Delimiter::Comma),
-        ";" => Ok(Delimiter::Semicolon),
+        Some(",") => Ok(Delimiter::Comma),
+        Some(";") => Ok(Delimiter::Semicolon),
         _ => Err("Invalid delimiter.".into()),
     }
 }

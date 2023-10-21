@@ -18,7 +18,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d95203a6a50906215a502507c0f879a0ce7ff205a6111e2db2a5ef8e4bb92e43"
 
 [[package]]
-name = "hw-02"
+name = "hw-05"
 version = "0.1.0"
 dependencies = [
  "convert_case",

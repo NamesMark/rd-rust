@@ -78,8 +78,19 @@ impl Csv {
         Ok(())
     }
 
-    pub fn parse_csv_data_default(&mut self, data: &str) -> Result<(), String> {
-        let default_delimiter = Delimiter::Semicolon;
-        self.parse_csv_data(data, default_delimiter)
+    // pub fn parse_csv_data_default(&mut self, data: &str) -> Result<(), String> {
+    //     let default_delimiter = Delimiter::Semicolon;
+    //     self.parse_csv_data(data, default_delimiter)
+    // }
+
+    pub fn display_csv_data(&self) {
+        for (index, header) in self.headers.iter().enumerate() {
+            println!("{}: {}", index, header);
+        }
+        for row in self.data.iter() {
+            for (index, value) in row.iter().enumerate() {
+                println!("{}: {}", index, value);
+            }
+        }
     }
 }
