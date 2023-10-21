@@ -217,7 +217,8 @@ fn leetify(s: String) -> Result<String, Box<dyn Error>> {
 fn process_csv(s: String, delimiter: Delimiter) -> Result<String, Box<dyn Error>> {
     let mut csv = csv::Csv::new();
     csv.parse_csv_data(&s, delimiter)?;
-    csv.display_csv_data();
+    //csv.display_csv_data();
+    println!("{}", csv);
     Ok("Processed successfully.".to_string())
 }
 

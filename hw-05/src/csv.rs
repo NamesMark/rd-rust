@@ -1,6 +1,7 @@
-use std::{str::FromStr, fmt::Display};
+use std::str::FromStr;
+use std::fmt;
 
-use pad::{PadStr, Alignment};
+//use pad::{PadStr, Alignment};
 
 const MAX_COLUMN_CAPACITY: usize = 16;
 
@@ -21,7 +22,7 @@ impl FromStr for Delimiter {
     }
 }
 
-impl Display for Delimiter {
+impl fmt::Display for Delimiter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Delimiter::Comma => write!(f, ","),
@@ -82,40 +83,51 @@ impl Csv {
         Ok(())
     }
 
-    pub fn display_csv_data(&self) {
+    pub fn format_as_table(&self) -> String {
+        let mut string_table = String::new();
         let column_num = (self.columns).len();
 
         let mut base_line = format!("{}┬", "─".repeat(MAX_COLUMN_CAPACITY))
         .repeat(column_num);
         base_line.pop();
 
-        let top_line =    format!("╭{}╮", base_line);
-        let header_line = format!("╞{}╡", base_line.replace("─", "═").replace("┬", "╪"));
-        let middle_line = format!("│{}│", base_line.replace("┬", "┼"));
-        let bottom_line = format!("╰{}╯", base_line.replace("┬", "┴"));
-        println!("{}", top_line);
+        let top_line =    format!("╭{}╮\n", base_line);
+        let header_line = format!("╞{}╡\n", base_line.replace("─", "═").replace("┬", "╪"));
+        let middle_line = format!("│{}│\n", base_line.replace("┬", "┼"));
+        let bottom_line = format!("╰{}╯\n", base_line.replace("┬", "┴"));
+
+        string_table.push_str(&top_line);
 
         for column_name in self.columns.iter() {
-            print!("{}", "│");
-            // print!("{:MAX_COLUMN_CAPACITY$}", column_name); // one way to pad
-            print!("{}", column_name.pad_to_width_with_alignment(MAX_COLUMN_CAPACITY, Alignment::Middle));
+            string_table.push_str("│");
+            string_table.push_str(&format!("{:^width$}", column_name, width = MAX_COLUMN_CAPACITY));
         }
-        println!("{}", "│");
-        println!("{}", header_line);
+        string_table.push_str("│\n");
+        string_table.push_str(&header_line);
 
         for (index, row) in self.data.iter().enumerate() {
-            print!("{}", "│");
+            string_table.push_str("│");
             for (index, value) in row.iter().enumerate() {
-                print!("{}", value.pad_to_width_with_alignment(MAX_COLUMN_CAPACITY, Alignment::Middle));
+                string_table.push_str(&format!("{:^width$}", value, width = MAX_COLUMN_CAPACITY));
                 if (index + 1) < row.len() {
-                    print!("{}", "┆");
+                    string_table.push_str("┆");
                 }
             }
-            println!("{}", "│");
+            string_table.push_str("│\n");
             if (index + 1) < self.data.len() {
-                println!("{}", middle_line);
+                string_table.push_str(&middle_line);
             }
         }
-        println!("{}", bottom_line);
+        
+        string_table.push_str(&bottom_line);
+
+        string_table
+    }
+
+}
+
+impl fmt::Display for Csv{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.format_as_table())
     }
 }
