@@ -83,7 +83,45 @@ impl Csv {
         Ok(())
     }
 
+    fn get_max_column_widths(&self) -> Vec<usize> {
+        let mut max_widths = vec![0; self.columns.len()];
+        
+        for (i, column) in self.columns.iter().enumerate() {
+            max_widths[i] = column.chars().count();
+        }
+
+        for row in &self.data {
+            for (i, cell) in row.iter().enumerate() {
+                max_widths[i] = max_widths[i].max(cell.chars().count());
+            }
+        }
+
+        max_widths
+    }
+
+    fn wrap_text(&self, text: &str, max_width: usize) -> Vec<String> {
+        let mut lines = Vec::new();
+        let mut line = String::new();
+
+        for word in text.split_whitespace() {
+            if line.len() + word.len() + 1 > max_width {
+                lines.push(line);
+                line = String::new();
+            }
+            if !line.is_empty() {
+                line.push(' ');
+            }
+            line.push_str(word);
+        }
+        if !line.is_empty() {
+            lines.push(line);
+        }
+
+        lines
+    }
+
     pub fn format_as_table(&self) -> String {
+        let max_widths = self.get_max_column_widths();
         let mut string_table = String::new();
         let column_num = (self.columns).len();
 
@@ -106,19 +144,30 @@ impl Csv {
         string_table.push_str(&header_line);
 
         for (index, row) in self.data.iter().enumerate() {
-            string_table.push_str("│");
-            for (index, value) in row.iter().enumerate() {
-                string_table.push_str(&format!("{:^width$}", value, width = MAX_COLUMN_CAPACITY));
-                if (index + 1) < row.len() {
-                    string_table.push_str("┆");
+            let mut wrapped_lines: Vec<Vec<String>> = Vec::new();
+
+            for (i, cell) in row.iter().enumerate() {
+                let lines = self.wrap_text(cell, max_widths[i]);
+                while wrapped_lines.len() < lines.len() {
+                    wrapped_lines.push(vec!["".to_string(); row.len()]);
+                }
+                for (j, line) in lines.iter().enumerate() {
+                    wrapped_lines[j][i] = line.clone();
                 }
             }
-            string_table.push_str("│\n");
+
+            for lines in &wrapped_lines {
+                for (i, line) in lines.iter().enumerate() {
+                    string_table.push_str("│");
+                    string_table.push_str(&format!("{:^width$}", line, width = max_widths[i]));
+                }
+                string_table.push_str("│\n");
+            }
             if (index + 1) < self.data.len() {
                 string_table.push_str(&middle_line);
             }
         }
-        
+
         string_table.push_str(&bottom_line);
 
         string_table
