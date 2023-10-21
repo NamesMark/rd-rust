@@ -10,13 +10,18 @@
 // short-slugify: convert the text into a short slug (similar to slugify but with a max length, cropped to the last dash before the length threshold).
 // alternating: convert the text to an alternating between uppercase and lowercase pattern using the convert_case crate.
 // leetify: Convert the text to leet speak using a .map() and a match block over specific letters.
+// csv: parse the test as a CSV and print the data as a table.
 
 extern crate slug;
-use slug::slugify;
+
+mod csv;
 
 use std::str::FromStr;
 use std::error::Error;
 
+use csv::Delimiter;
+
+use slug::slugify;
 use convert_case::{Case, Casing};
 
 const MAX_SHORT_SLUG: usize = 16;
@@ -31,6 +36,7 @@ enum Command {
     ShortSlugify,
     Alternating,
     Leetify,
+    Csv,
     NoCommand,
 }
 
@@ -46,6 +52,7 @@ impl FromStr for Command {
             "short-slugify" => Ok(Command::ShortSlugify),
             "alternating" => Ok(Command::Alternating),
             "leetify" => Ok(Command::Leetify),
+            "csv" => Ok(Command::Csv),
             _ => Err(()),
         }
     }
@@ -71,7 +78,7 @@ fn main() {
         }
     };
 
-    match transmute(input, command) {
+    match transmute(input, command, &args) {
         Ok(result) => println!("{}", result),
         Err(e) => eprintln!("Error executing command: {}", e),
     };
@@ -86,8 +93,8 @@ fn parse_command(args: &[String]) -> Result<Command, &'static str> {
 
 fn read_input() -> Result<String, Box<dyn Error>> {
     let mut input = String::new();
-    let mut counter: usize = 0;
-    while counter < 5 {
+    let mut counter: usize = 1;
+    while counter <= 5 {
         match std::io::stdin().read_line(&mut input) {
             Ok(_) => {
                 let trimmed = input.trim().to_string();
@@ -95,7 +102,7 @@ fn read_input() -> Result<String, Box<dyn Error>> {
                     return Ok(trimmed);
                 }
                 println!("No input provided. Please try again.");
-                eprintln!("Error reading input during attempt {}: {}", counter+1, "No input provided.".to_string());
+                eprintln!("Error reading input during attempt {}: {}", counter, "No input provided.".to_string());
             }
             Err(e) => eprintln!("Error reading input: {}", e),
         }
@@ -104,7 +111,7 @@ fn read_input() -> Result<String, Box<dyn Error>> {
     return Err("Too many failed attempts to read input.".into());
 }
 
-fn transmute(string: String, command: Command) -> Result<String, Box<dyn Error>> {
+fn transmute(string: String, command: Command, args: &[String]) -> Result<String, Box<dyn Error>> {
     match command {
         Command::Lowercase => lowercase(string),
         Command::Uppercase => uppercase(string),
@@ -113,6 +120,13 @@ fn transmute(string: String, command: Command) -> Result<String, Box<dyn Error>>
         Command::ShortSlugify => short_slugify(string),
         Command::Alternating => alternating(string),
         Command::Leetify => leetify(string),
+        Command::Csv => {
+            let delimiter_str = args.get(2).unwrap_or(&"".to_string());
+            match identify_delimiter(delimiter_str) {
+                Ok(delimiter) => process_csv(string, delimiter),
+                Err(_) => process_csv(string, Delimiter::Semicolon)
+            }
+        },
         // Command::NoCommand => Err("No valid command provided".into()), // An alternative way of handling the case where no command is provided.
         Command::NoCommand => no_command(string),
     }
@@ -166,6 +180,20 @@ fn leetify(s: String) -> Result<String, Box<dyn Error>> {
     }).collect())
 }
 
+fn process_csv(s: String, delimiter: Delimiter) -> Result<String, Box<dyn Error>> {
+    let mut csv = csv::Csv::new();
+    csv.parse_csv_data(&s, delimiter)?;
+    Ok("Processed successfully.".to_string())
+}
+
+fn identify_delimiter(s: &str) -> Result<Delimiter, Box<dyn Error>> {
+    match s {
+        "," => Ok(Delimiter::Comma),
+        ";" => Ok(Delimiter::Semicolon),
+        _ => Err("Invalid delimiter.".into()),
+    }
+}
+
 fn no_command(mut s: String) -> Result<String, Box<dyn Error>> {
         #[cfg(not(test))]
         {
@@ -181,31 +209,37 @@ mod tests {
 
     #[test]
     fn transmute_test() {
+        let args: Vec<String> = vec![];
         assert_eq!(transmute(
-            "Crabs can be found in all oceans and in fresh water.".to_string(), Command::Lowercase).unwrap(),
+            "Crabs can be found in all oceans and in fresh water.".to_string(), 
+            Command::Lowercase, &args).unwrap(),
             "crabs can be found in all oceans and in fresh water.");
         assert_eq!(transmute(
-            "There are at least 7,000 species, or kinds, of crab!".to_string(), Command::Uppercase).unwrap(),
+            "There are at least 7,000 species, or kinds, of crab!".to_string(), 
+            Command::Uppercase, &args).unwrap(),
             "THERE ARE AT LEAST 7,000 SPECIES, OR KINDS, OF CRAB!");
         assert_eq!(transmute(
-            "Crabs and other crustaceans have a hard covering known as the exoskeleton.".to_string(), Command::NoSpaces).unwrap(),
+            "Crabs and other crustaceans have a hard covering known as the exoskeleton.".to_string(), 
+            Command::NoSpaces, &args).unwrap(),
             "Crabsandothercrustaceanshaveahardcoveringknownastheexoskeleton.");
         assert_eq!(transmute(
-            "Crabs breathe by using gills, but the gills of land crabs have developed in such a way that they act like lungs.".to_string(), Command::Slugify).unwrap(),
+            "Crabs breathe by using gills, but the gills of land crabs have developed in such a way that they act like lungs.".to_string(), 
+            Command::Slugify, &args).unwrap(),
             "crabs-breathe-by-using-gills-but-the-gills-of-land-crabs-have-developed-in-such-a-way-that-they-act-like-lungs");
         assert_eq!(transmute(
-            "Tiny pea crabs may measure less than an inch (2.5 centimeters) across.".to_string(), Command::ShortSlugify).unwrap(),
+            "Tiny pea crabs may measure less than an inch (2.5 centimeters) across.".to_string(), 
+            Command::ShortSlugify, &args).unwrap(),
             "tiny-pea-crabs");
         assert_eq!(transmute(
             "Some types, including the blue crab, the Dungeness crab, and the king crab, are often eaten by humans. Crabs may be sold fresh to restaurants or their meat may be canned.".to_string(), 
-            Command::Alternating).unwrap(),
+            Command::Alternating, &args).unwrap(),
             "sOmE tYpEs, InClUdInG tHe BlUe CrAb, ThE dUnGeNeSs CrAb, AnD tHe KiNg CrAb, ArE oFtEn EaTeN bY hUmAnS. cRaBs MaY bE sOlD fReSh To ReStAuRaNtS oR tHeIr MeAt MaY bE cAnNeD.");
         assert_eq!(transmute(
             "As the crab grows larger, it seeks a larger shell.".to_string(), 
-            Command::Leetify).unwrap(),
+            Command::Leetify, &args).unwrap(),
             "45 7H3 CR48 9R0W5 L4R93R, 17 533K5 4 L4R93R 5H3LL.");
         assert_eq!(transmute(
-             "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.".to_string(), Command::NoCommand).unwrap(),
+             "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.".to_string(), Command::NoCommand, &args).unwrap(),
              "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.🧁");
     }
 
@@ -232,6 +266,6 @@ mod tests {
     fn wrong_command_test() {
         let args = vec!["prog_name".to_string(), "ultracase".to_string()];
         assert_eq!(parse_command(&args), Err("Invalid command."));
-        assert_eq!(transmute("a crab has five pairs of legs".to_string(), Command::NoCommand).unwrap(), "a crab has five pairs of legs🧁");
+        assert_eq!(transmute("a crab has five pairs of legs".to_string(), Command::NoCommand, &args).unwrap(), "a crab has five pairs of legs🧁");
     }
 }
