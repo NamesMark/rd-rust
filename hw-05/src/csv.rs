@@ -82,37 +82,40 @@ impl Csv {
         Ok(())
     }
 
-    // pub fn parse_csv_data_default(&mut self, data: &str) -> Result<(), String> {
-    //     let default_delimiter = Delimiter::Semicolon;
-    //     self.parse_csv_data(data, default_delimiter)
-    // }
-
     pub fn display_csv_data(&self) {
         let column_num = (self.columns).len();
 
-        let top_line = format!("╭{}╮", "-".repeat(column_num * MAX_COLUMN_CAPACITY + 3));
-        let middle_line = format!("|{}|", "-".repeat(column_num * MAX_COLUMN_CAPACITY + 3));
-        let bottom_line = format!("╰{}╯", "-".repeat(column_num * MAX_COLUMN_CAPACITY + 3));
+        let mut base_line = format!("{}┬", "─".repeat(MAX_COLUMN_CAPACITY))
+        .repeat(column_num);
+        base_line.pop();
+
+        let top_line =    format!("╭{}╮", base_line);
+        let header_line = format!("╞{}╡", base_line.replace("─", "═").replace("┬", "╪"));
+        let middle_line = format!("│{}│", base_line.replace("┬", "┼"));
+        let bottom_line = format!("╰{}╯", base_line.replace("┬", "┴"));
         println!("{}", top_line);
 
         for column_name in self.columns.iter() {
-            print!("{}", "|");
+            print!("{}", "│");
             // print!("{:MAX_COLUMN_CAPACITY$}", column_name); // one way to pad
             print!("{}", column_name.pad_to_width_with_alignment(MAX_COLUMN_CAPACITY, Alignment::Middle));
         }
-        println!("{}", "|");
-        println!("{}", middle_line);
+        println!("{}", "│");
+        println!("{}", header_line);
 
-        for row in self.data.iter() {
-            for (value) in row.iter() {
-                print!("{}", "|");
-                // print!("{:MAX_COLUMN_CAPACITY$}", value);
+        for (index, row) in self.data.iter().enumerate() {
+            print!("{}", "│");
+            for (index, value) in row.iter().enumerate() {
                 print!("{}", value.pad_to_width_with_alignment(MAX_COLUMN_CAPACITY, Alignment::Middle));
+                if (index + 1) < row.len() {
+                    print!("{}", "┆");
+                }
             }
-            println!("{}", "|");
-            println!("{}", middle_line);
+            println!("{}", "│");
+            if (index + 1) < self.data.len() {
+                println!("{}", middle_line);
+            }
         }
-
-        // println!("{}", bottom_line);
+        println!("{}", bottom_line);
     }
 }
