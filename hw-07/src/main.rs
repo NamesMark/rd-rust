@@ -78,72 +78,110 @@ enum InputMode {
     MultiLine,
 }
 
+#[derive(PartialEq, Clone, Copy)]
+enum ExecutionMode {
+    OneShot,
+    Interactive,
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    let execution_mode = match args.len() {
+        1 => ExecutionMode::Interactive,
+        _ => ExecutionMode::OneShot,
+    };
 
-    if args.len() == 1 { // interactive mode
-        loop {
-            let command_input = match read_input(InputMode::SingleLine, "a command".to_string()) {
-                Ok(input) => input,
-                Err(e) => {
-                    eprintln!("Error reading command: {}", e);
-                    continue;
+    let (tx, rx) = channel();
+
+    let producer_args = args.clone();
+    let producer = thread::spawn(move || {
+        match execution_mode {
+            ExecutionMode::Interactive => {
+                loop {
+                    let command = match get_command(execution_mode, &producer_args) {
+                        Ok(command) => command,
+                        Err(e) => {
+                            eprintln!("Error reading the command: {}", e);
+                            return;
+                        }
+                    }; 
+                    let input_description = format!("your input to {}", command.to_string());
+                    let input = match read_input(InputMode::MultiLine, input_description) {
+                        Ok(input) => input,
+                        Err(e) => {
+                            eprintln!("Error reading the input: {}", e);
+                            return;
+                        }
+                    };
+
+                    tx.send((command, input)).unwrap();
                 }
-            };
-
-            let mut command_args: Vec<String> = command_input.trim().split_whitespace().map(String::from).collect();
-
-            command_args.insert(0, "".to_string());
-
-            // Step 2: Parse the command
-            let command = match parse_command(&command_args) {
-                Ok(command) => command,
-                Err(e) => {
-                    eprintln!("Error parsing command: {}", e);
-                    continue;
-                }
-            };
-
-            let command_name = command.to_string();
-    
-            let input = match read_input(InputMode::MultiLine, format!("your input to {command_name}")) {
-
-                Ok(input) => input,
-                Err(e) => {
-                    eprintln!("Error reading input: {}", e);
-                    return;
-                }
-            };
-        
-            match transmute(input, command, &args) {
-                Ok(result) => println!("{}", result),
-                Err(e) => eprintln!("Error executing command: {}", e),
-            };
+            },
+            ExecutionMode::OneShot => {
+                let command = match (get_command(execution_mode, &producer_args)) {
+                    Ok(command) => command,
+                    Err(e) => {
+                        eprintln!("Error reading the command: {}", e);
+                        return;
+                    }
+                }; 
+                let input_description = format!("your input to {}", command.to_string());
+                let input = match read_input(InputMode::MultiLine, input_description) {
+                    Ok(input) => input,
+                    Err(e) => {
+                        eprintln!("Error reading the input: {}", e);
+                        return;
+                    }
+                };
+                tx.send((command, input)).unwrap();
+            }
         }
-    } else {            // regular mode
-        let command = match parse_command(&args) {
-            Ok(command) => command,
-            Err(e) => {
-                eprintln!("Error parsing command: {}", e);
-                println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
-                Command::NoCommand
-            }
-        };
+    });
 
-        let command_name = command.to_string();
-    
-        let input = match read_input(InputMode::MultiLine, format!("your input to {command_name}")) {
-            Ok(input) => input,
-            Err(e) => {
-                eprintln!("Error reading input: {}", e);
-                return;
-            }
-        };
-    
+    // Consumer thread
+    let consumer = thread::spawn(move || {
+        // Receive the command and input
+        let (command, input) = rx.recv().unwrap();
+
+        // Execute the command
         match transmute(input, command, &args) {
             Ok(result) => println!("{}", result),
             Err(e) => eprintln!("Error executing command: {}", e),
         };
+    });
+
+    producer.join().unwrap();
+    consumer.join().unwrap();
+}
+
+fn get_command(mode: ExecutionMode, args: &[String]) -> Result<Command, &'static str> {
+    match mode {
+        ExecutionMode::Interactive => {
+            // Read the command from console in single-line mode:
+            let command_input = match read_input(InputMode::SingleLine, "a command".to_string()) {
+                Ok(input) => input,
+                Err(e) => format!("Error reading the command from the console: {}", e),
+            };
+            let mut command_args: Vec<String> = command_input.trim().split_whitespace().map(String::from).collect();
+
+            command_args.insert(0, "".to_string());
+
+            // Parse the command
+            let command = parse_command(&command_args)?;
+            Ok(command)
+        },
+        ExecutionMode::OneShot => {
+            // Parse the command from the arguments:
+            let command = match parse_command(&args) {
+                Ok(command) => command,
+                Err(e) => {
+                    eprintln!("Error parsing command: {}", e);
+                    println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
+                    Command::NoCommand
+                }
+            };
+            Ok(command)
+        }
     }
 }
 
@@ -213,14 +251,12 @@ fn transmute(string: String, command: Command, args: &[String]) -> Result<String
     }
 } 
 
-
-
 fn process_csv(s: String, delimiter: Delimiter) -> Result<String, Box<dyn Error>> {
     let mut csv = csv::Csv::new();
     csv.parse_csv_data(&s, delimiter)?;
     //csv.display_csv_data();
-    println!("{}", csv);
-    Ok("Processed successfully.".to_string())
+    //println!("{}", csv);
+    Ok(csv.to_string())
 }
 
 fn identify_delimiter(s: Option<&str>) -> Result<Delimiter, Box<dyn Error>> {
