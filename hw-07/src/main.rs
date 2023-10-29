@@ -298,4 +298,10 @@ mod tests {
         assert_eq!(parse_command(&args), Err("Invalid command."));
         assert_eq!(transmute("a crab has five pairs of legs".to_string(), Command::NoCommand, &args).unwrap(), "a crab has five pairs of legs🧁");
     }
+
+    #[test]
+    fn no_command_test() {
+        assert_eq!(no_command("One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.".to_string()).unwrap(),
+                   "One group of crabs, the hermits, are known for their habit of taking over empty snail shells for shelter.🧁");
+    }
 }
