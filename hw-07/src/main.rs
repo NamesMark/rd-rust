@@ -13,21 +13,17 @@
 // csv: parse the test as a CSV and print the data as a table. Usage: csv <delimiter> (defaults to semicolon). 
 //      Put the delimiter in quotes to avoid shell expansion or other interpretation isues.
 
-extern crate slug;
-
 mod csv;
+mod text_utils;
 
 use std::str::FromStr;
 use std::error::Error;
 use std::io::{self, Write};
+use std::sync::mpsc::channel;
+use std::thread;
 
 use csv::Delimiter;
-
-use slug::slugify;
-use convert_case::{Case, Casing};
-
-const MAX_SHORT_SLUG: usize = 16;
-const MIN_SHORT_SLUG: usize = 5;
+use text_utils::{lowercase, uppercase, no_spaces, slugify, short_slugify, alternating, leetify};
 
 #[derive(Debug, PartialEq)]
 enum Command {
@@ -201,7 +197,7 @@ fn transmute(string: String, command: Command, args: &[String]) -> Result<String
         Command::Lowercase => lowercase(string),
         Command::Uppercase => uppercase(string),
         Command::NoSpaces => no_spaces(string),
-        Command::Slugify => slug(&string),
+        Command::Slugify => slugify(&string),
         Command::ShortSlugify => short_slugify(string),
         Command::Alternating => alternating(string),
         Command::Leetify => leetify(string),
@@ -217,53 +213,7 @@ fn transmute(string: String, command: Command, args: &[String]) -> Result<String
     }
 } 
 
-fn lowercase(s: String) -> Result<String, Box<dyn Error>> {
-    Ok(s.to_lowercase())
-}
 
-fn uppercase(s: String) -> Result<String, Box<dyn Error>> {
-    Ok(s.to_uppercase())
-}
-
-fn no_spaces(s: String) -> Result<String, Box<dyn Error>> {
-    Ok(s.replace(" ", ""))
-}
-
-fn slug(s: &str) -> Result<String, Box<dyn Error>> {
-    Ok(slug::slugify(s))
-}
-
-fn short_slugify(string: String) -> Result<String, Box<dyn Error>> {
-    let short_slug = slugify(&string).chars().take(MAX_SHORT_SLUG).collect::<String>();
-    let mut trimmed_short_slug = short_slug.clone();
-    while !trimmed_short_slug.ends_with('-') && !trimmed_short_slug.is_empty() {
-        trimmed_short_slug.pop();
-    }
-    let trimmed_short_slug = trimmed_short_slug.trim_end_matches('-').to_string();
-    if trimmed_short_slug.len() < MIN_SHORT_SLUG {
-        return Ok(short_slug);
-    }
-    
-    Ok(trimmed_short_slug)
-}
-
-fn alternating(s: String) -> Result<String, Box<dyn Error>> {
-    Ok(s.to_case(Case::Alternating))
-}
-
-fn leetify(s: String) -> Result<String, Box<dyn Error>> {
-    Ok(s.to_uppercase().chars().map(|c| match c {
-        'A' => '4',
-        'B' => '8',
-        'E' => '3',
-        'G' => '9',
-        'I' => '1',
-        'O' => '0',
-        'S' => '5',
-        'T' => '7',
-        _ => c,
-    }).collect())
-}
 
 fn process_csv(s: String, delimiter: Delimiter) -> Result<String, Box<dyn Error>> {
     let mut csv = csv::Csv::new();
@@ -340,13 +290,6 @@ mod tests {
         assert_eq!(parse_command(&args), Ok(Command::ShortSlugify));
         args[1] = "alternating".to_string();
         assert_eq!(parse_command(&args), Ok(Command::Alternating));
-    }
-
-    #[test]
-    fn short_slugify_test() {
-        assert_eq!(short_slugify("Crabs can be found in all oceans and in fresh water.".to_string()).unwrap(), "crabs-can-be");
-        assert_eq!(short_slugify("Crabsandothercrustaceanshaveahard covering known as the exoskeleton.".to_string()).unwrap(), "crabsandothercru");
-        assert_eq!(short_slugify("Although a few baby crabs leave the egg looking like small adults, most do not.".to_string()).unwrap(), "although-a-few");
     }
 
     #[test]
