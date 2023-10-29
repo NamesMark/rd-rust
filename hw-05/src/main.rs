@@ -60,21 +60,58 @@ impl FromStr for Command {
     }
 }
 
+impl ToString for Command {
+    fn to_string(&self) -> String {
+        match self {
+            Command::Lowercase => "lowercase".to_string(),
+            Command::Uppercase => "uppercase".to_string(),
+            Command::NoSpaces => "no-spaces".to_string(),
+            Command::Slugify => "slugify".to_string(),
+            Command::ShortSlugify => "short-slugify".to_string(),
+            Command::Alternating => "alternating".to_string(),
+            Command::Leetify => "leetify".to_string(),
+            Command::Csv => "csv".to_string(),
+            Command::NoCommand => "no command".to_string(),
+        }
+    }
+}
+
+#[derive(PartialEq)]
+enum InputMode {
+    SingleLine,
+    MultiLine,
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if len(args) == 1 { // interactive mode
+    if args.len() == 1 { // interactive mode
         loop {
-            let command = match parse_command(read_input()) {
+            let command_input = match read_input(InputMode::SingleLine, "a command".to_string()) {
+                Ok(input) => input,
+                Err(e) => {
+                    eprintln!("Error reading command: {}", e);
+                    continue;
+                }
+            };
+
+            let mut command_args: Vec<String> = command_input.trim().split_whitespace().map(String::from).collect();
+
+            command_args.insert(0, "".to_string());
+
+            // Step 2: Parse the command
+            let command = match parse_command(&command_args) {
                 Ok(command) => command,
                 Err(e) => {
                     eprintln!("Error parsing command: {}", e);
-                    println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
-                    Command::NoCommand
+                    continue;
                 }
             };
-        
-            let input = match read_input() {
+
+            let command_name = command.to_string();
+    
+            let input = match read_input(InputMode::MultiLine, format!("your input to {command_name}")) {
+
                 Ok(input) => input,
                 Err(e) => {
                     eprintln!("Error reading input: {}", e);
@@ -96,8 +133,10 @@ fn main() {
                 Command::NoCommand
             }
         };
+
+        let command_name = command.to_string();
     
-        let input = match read_input() {
+        let input = match read_input(InputMode::MultiLine, format!("your input to {command_name}")) {
             Ok(input) => input,
             Err(e) => {
                 eprintln!("Error reading input: {}", e);
@@ -119,27 +158,10 @@ fn parse_command(args: &[String]) -> Result<Command, &'static str> {
     }
 }
 
-fn read_input() -> Result<String, Box<dyn Error>> {
-    // let mut input = String::new();
-    // let mut counter: usize = 1;
-    // while counter <= 5 {
-    //     match std::io::stdin().read_line(&mut input) {
-    //         Ok(_) => {
-    //             let trimmed = input.trim().to_string();
-    //             if !trimmed.is_empty() {
-    //                 return Ok(trimmed);
-    //             }
-    //             println!("No input provided. Please try again.");
-    //             eprintln!("Error reading input during attempt {}: {}", counter, "No input provided.".to_string());
-    //         }
-    //         Err(e) => eprintln!("Error reading input: {}", e),
-    //     }
-    //     counter += 1;
-    // }
-    // return Err("Too many failed attempts to read input.".into());
+fn read_input(mode: InputMode, input_description: String) -> Result<String, Box<dyn Error>> {
     let mut input = String::new();
 
-    println!("Please enter your input:");
+    println!("Please enter {input_description}:");
     
     loop {
         print!("> ");
@@ -160,6 +182,9 @@ fn read_input() -> Result<String, Box<dyn Error>> {
                 eprintln!("Error reading input: {}", e);
                 break;
             }
+        }
+        if mode == InputMode::SingleLine {
+            break;
         }
     }
 
