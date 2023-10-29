@@ -19,7 +19,7 @@ mod text_utils;
 use std::str::FromStr;
 use std::error::Error;
 use std::io::{self, Write};
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{Sender, channel};
 use std::thread;
 
 use csv::Delimiter;
@@ -93,65 +93,49 @@ fn main() {
 
     let (tx, rx) = channel();
 
-    let producer_args = args.clone();
-    let producer = thread::spawn(move || {
-        match execution_mode {
-            ExecutionMode::Interactive => {
-                loop {
-                    let command = match get_command(execution_mode, &producer_args) {
-                        Ok(command) => command,
-                        Err(e) => {
-                            eprintln!("Error reading the command: {}", e);
-                            return;
-                        }
-                    }; 
-                    let input_description = format!("your input to {}", command.to_string());
-                    let input = match read_input(InputMode::MultiLine, input_description) {
-                        Ok(input) => input,
-                        Err(e) => {
-                            eprintln!("Error reading the input: {}", e);
-                            return;
-                        }
-                    };
-
-                    tx.send((command, input)).unwrap();
-                }
-            },
-            ExecutionMode::OneShot => {
-                let command = match (get_command(execution_mode, &producer_args)) {
-                    Ok(command) => command,
-                    Err(e) => {
-                        eprintln!("Error reading the command: {}", e);
-                        return;
-                    }
-                }; 
-                let input_description = format!("your input to {}", command.to_string());
-                let input = match read_input(InputMode::MultiLine, input_description) {
-                    Ok(input) => input,
-                    Err(e) => {
-                        eprintln!("Error reading the input: {}", e);
-                        return;
-                    }
-                };
-                tx.send((command, input)).unwrap();
-            }
-        }
+    let producer = thread::spawn( {
+        let args = args.clone();
+        move || run_producer(&tx, execution_mode, &args)
     });
 
-    // Consumer thread
     let consumer = thread::spawn(move || {
-        // Receive the command and input
-        let (command, input) = rx.recv().unwrap();
-
-        // Execute the command
-        match transmute(input, command, &args) {
-            Ok(result) => println!("{}", result),
-            Err(e) => eprintln!("Error executing command: {}", e),
-        };
+        if let Ok((command, input)) = rx.recv() {
+            execute_command(command, input, &args);
+        }
     });
 
     producer.join().unwrap();
     consumer.join().unwrap();
+}
+
+fn run_producer(tx: &Sender<(Command, String)>, mode: ExecutionMode, args: &[String]) {
+    let mut ran_once = false;
+
+    while mode == ExecutionMode::Interactive || !ran_once {
+        if let Ok(command) = get_command(mode, args) {
+            let input_description = format!("your input to {}", command.to_string());
+            if let Ok(input) = read_input(InputMode::MultiLine, input_description) {
+                if tx.send((command, input)).is_err() {
+                    eprintln!("Error sending data to consumer.");
+                    break;
+                }
+            } else {
+                eprintln!("Error reading input.");
+                break;
+            }
+        } else {
+            eprintln!("Error getting command.");
+            break;
+        }
+        ran_once = true; 
+    }
+}
+
+fn execute_command(command: Command, input: String, args: &[String]) {
+    match transmute(input, command, args) {
+        Ok(result) => println!("{}", result),
+        Err(e) => eprintln!("Error executing command: {}", e),
+    }
 }
 
 fn get_command(mode: ExecutionMode, args: &[String]) -> Result<Command, &'static str> {
