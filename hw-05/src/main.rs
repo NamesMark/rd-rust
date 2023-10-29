@@ -63,27 +63,53 @@ impl FromStr for Command {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    let command = match parse_command(&args) {
-        Ok(command) => command,
-        Err(e) => {
-            eprintln!("Error parsing command: {}", e);
-            println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
-            Command::NoCommand
+    if len(args) == 1 { // interactive mode
+        loop {
+            let command = match parse_command(read_input()) {
+                Ok(command) => command,
+                Err(e) => {
+                    eprintln!("Error parsing command: {}", e);
+                    println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
+                    Command::NoCommand
+                }
+            };
+        
+            let input = match read_input() {
+                Ok(input) => input,
+                Err(e) => {
+                    eprintln!("Error reading input: {}", e);
+                    return;
+                }
+            };
+        
+            match transmute(input, command, &args) {
+                Ok(result) => println!("{}", result),
+                Err(e) => eprintln!("Error executing command: {}", e),
+            };
         }
-    };
-
-    let input = match read_input() {
-        Ok(input) => input,
-        Err(e) => {
-            eprintln!("Error reading input: {}", e);
-            return;
-        }
-    };
-
-    match transmute(input, command, &args) {
-        Ok(result) => println!("{}", result),
-        Err(e) => eprintln!("Error executing command: {}", e),
-    };
+    } else {            // regular mode
+        let command = match parse_command(&args) {
+            Ok(command) => command,
+            Err(e) => {
+                eprintln!("Error parsing command: {}", e);
+                println!("Although you haven't provided a valid command, you can still try to input something and see what happens.");
+                Command::NoCommand
+            }
+        };
+    
+        let input = match read_input() {
+            Ok(input) => input,
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                return;
+            }
+        };
+    
+        match transmute(input, command, &args) {
+            Ok(result) => println!("{}", result),
+            Err(e) => eprintln!("Error executing command: {}", e),
+        };
+    }
 }
 
 fn parse_command(args: &[String]) -> Result<Command, &'static str> {
