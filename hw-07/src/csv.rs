@@ -5,6 +5,10 @@ use std::fmt;
 
 const MAX_COLUMN_CAPACITY: usize = 16;
 
+pub const DEFAULT_DELIMITER: Delimiter = Delimiter::Semicolon;
+pub const DEFAULT_COL_WIDTH: i32 = 16;
+
+#[derive(PartialEq)]
 pub enum Delimiter {
     Comma,
     Semicolon
