@@ -1,9 +1,9 @@
 # Homework for Lesson #7 - Multithreading + i/o
 
 ## Problem
-- Application should run once if the arguments were provided, or ask for them interactively if not
-- Set up concurrency using `std::mpsc::channel` with two threads: producer (obtains user input) and consumer (processes input and returns output)
-- Read csv either from a file or from the console
+- Application should run once if the arguments were provided, or ask for them interactively if not.
+- Set up concurrency using `std::mpsc::channel` with two threads: producer (obtains user input) and consumer (processes input and returns output).
+- Read csv either from a file or from the console.
 
 ## Approach
 ### Two execution modes
@@ -44,11 +44,11 @@ Ok(content)
 ```
 
 ## Usage
-    There are two modes of operation: one-time that uses the provided arguments, and interactive, that relies on user input through the console.
+There are two modes of operation: one-time that uses the provided arguments, and interactive, that relies on user input through the console.
 
 ### One-shot mode
 #### Text commands
--   All the text commands work the same as in previous versions (double new line is needed to execute):
+To run the program in this mode, the user has to provide a valid command, e.g.: `cargo run leetify`. All the text commands work the same as in previous versions (double new line is needed to execute):
 ```
 > cargo run uppercase
 Please enter your input to uppercase:
@@ -57,7 +57,7 @@ Please enter your input to uppercase:
 HELLO
 ```
 #### Csv processing
-- If only "csv" was provided, the program will attempt to read the file from the default test file `test/username.csv`
+If only "csv" was provided, the program will attempt to read the file from the default test file `test/username.csv`.
 ```
 PS C:\Prog\Courses\r_d\rd-rust\hw-07> cargo run csv
 ╭────────────────┬────────────────┬────────────────┬────────────────╮
@@ -66,7 +66,6 @@ PS C:\Prog\Courses\r_d\rd-rust\hw-07> cargo run csv
 │    booker12    ┆      9012      ┆     Rachel     ┆     Booker     │
 ...
 ```
-
 
 ### Interactive mode
 
@@ -94,11 +93,10 @@ Accessed using `csv` command when prompted.
 - If no additional settings were provided, the user is prompted to enter their csv data into the console
 ```
 ❯ cargo run
-    Finished dev [unoptimized + debuginfo] target(s) in 0.01s
-     Running `target\debug\hw-07.exe`
 Please enter a command:
 > csv
-Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if no path is provided - enter csv in the console):
+Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> 
+(leave empty to enter in console):
 >   
 Please enter your input to csv:
 > Username; Identifier;First name;Last name
@@ -118,7 +116,8 @@ Please enter your input to csv:
 ```
 Please enter a command:
 > csv
-Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if no path is provided - enter csv in the console):
+Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> 
+(leave empty to enter in console):
 > p:test/username.csv d:semicolon
 ╭────────────────┬────────────────┬────────────────┬────────────────╮
 │    Username    │   Identifier   │   First name   │   Last name    │
@@ -131,7 +130,8 @@ Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if 
 ```
 Please enter a command:
 > csv
-Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if no path is provided - enter csv in the console):
+Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> 
+(leave empty to enter in console):
 > p:test/username.csv d:comma
 ╭────────────────╮
 │Username; Identi│
@@ -143,7 +143,8 @@ Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if 
 
 - The user can choose the maximum allowed length for header name and data:
 ```
-Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if no path is provided - enter csv in the console):
+Please enter your CSV settings: p:<path> d:<delimiter> w:<max_column_width> 
+(leave empty to enter in console):
 > p:test/username.csv w:4
 ╭────────────────┬────────────────┬────────────────┬────────────────╮
 │      User      │       Ide      │      Firs      │      Last      │
@@ -164,9 +165,11 @@ Text processing:
 - short-slugify: convert the text into a short slug (similar to slugify but with a max length, cropped to the last dash before the length threshold).
 - alternating: convert the text to an alternating between uppercase and lowercase pattern using the convert_case crate.
 - leetify: Convert the text to leet speak using a .map() and a match block over specific letters.
+
 Csv:
 - csv: parse the test as a CSV and print the data as a table. Usage: p:<path> d:<delimiter> w:<max_column_width>.
--- Defaults: 
+
+Defaults: 
 - path: test/username.csv
 - delimiter: semicolon
 - width: 16

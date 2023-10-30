@@ -49,7 +49,7 @@ pub fn get_csv_subcommand<R: Read>(_input_source: R, mode: ExecutionMode, args: 
     match mode {
         ExecutionMode::Interactive => {
             // Read the settings from console in single-line mode:
-            let settings_input = match read_input(io::stdin(), InputMode::SingleLine, "your CSV settings: p:<path> d:<delimiter> w:<max_column_width> (if no path is provided - enter csv in the console)".to_string()) {
+            let settings_input = match read_input(io::stdin(), InputMode::SingleLine, "your CSV settings: p:<path> d:<delimiter> w:<max_column_width> \n(leave empty to enter in console)".to_string()) {
                 Ok(input) => input,
                 Err(_e) =>  return Ok(SubCommand::None), // no csv settings, so the user will input their csv into the console
             };
