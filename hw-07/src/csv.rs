@@ -1,14 +1,12 @@
 use std::str::FromStr;
 use std::fmt;
 
-//use pad::{PadStr, Alignment};
-
-const MAX_COLUMN_CAPACITY: usize = 16;
-
 pub const DEFAULT_DELIMITER: Delimiter = Delimiter::Semicolon;
-pub const DEFAULT_COL_WIDTH: i32 = 16;
+pub const DEFAULT_COL_WIDTH: usize = 16;
+pub const DEFAULT_FILE_PATH: &str = "test/username.csv"; 
+pub const MAX_COLUMN_CAPACITY: usize = DEFAULT_COL_WIDTH;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Delimiter {
     Comma,
     Semicolon
@@ -19,8 +17,8 @@ impl FromStr for Delimiter {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "," => Ok(Delimiter::Comma),
-            ";" => Ok(Delimiter::Semicolon),
+            "," | "comma" => Ok(Delimiter::Comma),
+            ";" | "semicolon" => Ok(Delimiter::Semicolon),
             _ => Err(()),
         }
     }
@@ -48,7 +46,7 @@ impl Csv {
         }
     }
     
-    pub fn parse_csv_data(&mut self, data: &str, delimiter: Delimiter) -> Result<(), String> {
+    pub fn parse_csv_data(&mut self, data: &str, delimiter: Delimiter, max_width: usize) -> Result<(), String> {
         let lines:Vec<&str> = data.split('\n').collect();
         if lines.is_empty() {
             return Err("No csv data found.".to_string());
@@ -58,7 +56,7 @@ impl Csv {
             .split(&delimiter.to_string())
             .map(|header| { 
                 let mut header = header.to_string();
-                header.truncate(MAX_COLUMN_CAPACITY);
+                header.truncate(max_width);
                 header
             })
             .collect();
@@ -73,7 +71,7 @@ impl Csv {
                 line.split(&delimiter.to_string())
                     .map(|value| { 
                         let mut value = value.to_string();
-                        value.truncate(MAX_COLUMN_CAPACITY);
+                        value.truncate(max_width);
                         value
                     })
                     .collect()
