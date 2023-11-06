@@ -1,8 +1,10 @@
-[package]
-name = "hw-09"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "client",
+    "server",
+    "common",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+# Global workspace dependencies
+# [dependencies]
+# log = "0.4"
