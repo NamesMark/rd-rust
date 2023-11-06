@@ -14,13 +14,16 @@ const DEFAULT_PORT: &str = "11111";
 const IMAGE_STORE: &str = "images/";
 const FILE_STORE: &str = "files/";
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    env_logger::init();
+
     let args: Vec<String> = std::env::args().collect();
     let host = args.get(1).unwrap_or(&DEFAULT_HOST.to_string()).to_string();
     let port = args.get(2).unwrap_or(&DEFAULT_PORT.to_string()).to_string();
 
 
-    start_server(&host, &port);
+    start_server(&host, &port).await;
 }
 
 fn handle_client(mut stream: TcpStream) {

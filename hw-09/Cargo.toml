@@ -4,7 +4,3 @@ members = [
     "server",
     "common",
 ]
-
-# Global workspace dependencies
-# [dependencies]
-# log = "0.4"
