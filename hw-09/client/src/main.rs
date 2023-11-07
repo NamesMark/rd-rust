@@ -1,8 +1,10 @@
+use std::io::{self, Write};
+
 use tokio::net::TcpStream;
 use tokio::io::AsyncWriteExt;
-use common::{Message, DEFAULT_HOST, DEFAULT_PORT};
-use std::io::{self, Write};
 use log::{info, error};
+
+use common::{Message, DEFAULT_HOST, DEFAULT_PORT};
 
 /// Test input:
 /// .image nice.png
