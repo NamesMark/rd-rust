@@ -5,7 +5,7 @@ use log::{info};
 pub const DEFAULT_HOST: &str = "127.0.0.1";
 pub const DEFAULT_PORT: &str = "11111";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
     File(String, Vec<u8>),
     Image(String, Vec<u8>),
