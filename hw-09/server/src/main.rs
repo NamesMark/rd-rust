@@ -2,15 +2,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::path::PathBuf;
 
 use tokio::net::{TcpListener, TcpStream};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncReadExt;
 use tokio::fs;
 use tokio::signal;
 use tokio::sync::broadcast;
-use log::{info, warn, error};
+use log::{info, error};
 
 use common::{Message, DEFAULT_HOST, DEFAULT_PORT};
-
-use image::DynamicImage;
 
 const IMAGE_STORE: &str = "images/";
 const FILE_STORE: &str = "files/";
