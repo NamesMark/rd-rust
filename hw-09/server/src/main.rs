@@ -5,12 +5,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::io::Read;
 use log::{info, warn, error};
 
-use common::Message;
+use common::{Message, DEFAULT_HOST, DEFAULT_PORT, log_prln};
 
 use image::DynamicImage;
 
-const DEFAULT_HOST: &str = "127.0.0.1";
-const DEFAULT_PORT: &str = "11111";
 const IMAGE_STORE: &str = "images/";
 const FILE_STORE: &str = "files/";
 
@@ -31,7 +29,7 @@ fn handle_client(mut stream: TcpStream) {
     while match stream.read(&mut buffer) {
         Ok(size) => {
             let message: Message = serde_cbor::from_slice(&buffer[..size]).unwrap();
-            info!("Received message: {}", String::from_utf8_lossy(&buffer[..size]));
+            log_prln(format!("Received message: {}", String::from_utf8_lossy(&buffer[..size])));
             process_message(message);
             true
         }
@@ -46,13 +44,13 @@ fn handle_client(mut stream: TcpStream) {
 
 async fn start_server(host: &str, port: &str) {
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
-    info!("Server listening on {}:{}", host, port);
+    log_prln(format!("Server listening on {}:{}", host, port));
 
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
                 thread::spawn(|| {
-                    info!("New connection: {}", stream.peer_addr().unwrap());
+                    log_prln(format!("New connection: {}", stream.peer_addr().unwrap()));
                     handle_client(stream)
                 });
             }
@@ -67,17 +65,20 @@ fn process_message(message: Message) {
     match message {
         Message::File(filename, data) => save_file(&filename, &data),
         Message::Image(filename, data) => save_image(&filename, &data),
-        Message::Text(text) => info!("Received text message: {}", text),
+        Message::Text(text) => log_prln(format!("Identified as text message: {}", text)),
     }
 }
 
 fn save_file(filename: &str, data: &[u8]) {
+    log_prln(format!("Identified message as a file."));
     fs::create_dir_all(FILE_STORE).expect("Could not create files directory");
     let path = format!("{}{}", FILE_STORE, filename);
-    fs::write(path, data).expect("Could not write file");
+    fs::write(&path, data).expect("Could not write file");
+    log_prln(format!("Saved the file to {}.", path));
 }
 
 fn save_image(filename: &str, data: &[u8]) {
+    log_prln(format!("Identified message as an image."));
     fs::create_dir_all(IMAGE_STORE).expect("Could not create images directory");
     save_as_png(data, filename).expect("Could not save image as PNG");
 }
@@ -90,6 +91,7 @@ fn save_as_png(data: &[u8], filename: &str) -> Result<(), image::ImageError> {
         .as_secs();
 
     let file_path = format!("{}{}_{}.png", IMAGE_STORE, filename, timestamp);
+    log_prln(format!("Saved the image as {}.", file_path));
     img.save_with_format(file_path, image::ImageFormat::Png)
 }
 

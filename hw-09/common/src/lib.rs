@@ -1,5 +1,9 @@
 use std::fmt;
 use serde::{Serialize, Deserialize};
+use log::{info};
+
+pub const DEFAULT_HOST: &str = "127.0.0.1";
+pub const DEFAULT_PORT: &str = "11111";
 
 #[derive(Serialize, Deserialize)]
 pub enum Message {
@@ -16,4 +20,9 @@ impl fmt::Display for Message {
             Message::Text(text) => write!(f, "Text"),
         }
     }
+}
+
+pub fn log_prln(message: String) {
+    info!("{}", message);
+    println!("{}", message);
 }

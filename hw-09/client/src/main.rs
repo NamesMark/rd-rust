@@ -1,11 +1,8 @@
-use common::Message;
+use common::{Message, DEFAULT_HOST, DEFAULT_PORT, log_prln};
 use std::io::{self, Write};
 use std::net::TcpStream;
 use std::str::FromStr;
 use log::{info, warn, error};
-
-const DEFAULT_HOST: &str = "127.0.0.1";
-const DEFAULT_PORT: &str = "11111";
 
 /// Test input:
 /// .image nice.png
@@ -28,7 +25,7 @@ async fn main() {
 async fn start_client(host: &str, port: &str) {
     match TcpStream::connect(format!("{}:{}", host, port)) {
         Ok(mut stream) => {
-            info!("Successfully connected to server in port {}", port);
+            log_prln(format!("Successfully connected to server in port {}", port));
 
             get_input(&mut stream);
         }
@@ -59,7 +56,7 @@ fn get_input(stream: &mut TcpStream) {
             } else {
                 Message::Text(trimmed.to_string())
             };
-            info!("Sending message of type {}", message);
+            log_prln(format!("Sending message of type {}", message));
             let serialized_message = serde_cbor::to_vec(&message).unwrap();
             stream.write_all(&serialized_message).unwrap();
         }
