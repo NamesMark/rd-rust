@@ -1,0 +1,1 @@
+C:\Prog\Courses\r_d\rd-rust\hw-07\target\debug\hw-05.exe: C:\Prog\Courses\r_d\rd-rust\hw-07\src\csv.rs C:\Prog\Courses\r_d\rd-rust\hw-07\src\main.rs C:\Prog\Courses\r_d\rd-rust\hw-07\src\text_utils.rs
